@@ -5,6 +5,19 @@ const fccTesting = require("./freeCodeCamp/fcctesting.js");
 
 const app = express();
 
+app.set('view engine', 'pug')
+app.set('views', './views/pug')
+
+let passport = require('passport');
+let session = require('express-session');
+
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: true,
+  saveUnitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 fccTesting(app); //For FCC testing purposes
 app.use("/public", express.static(process.cwd() + "/public"));
@@ -13,11 +26,11 @@ app.use(express.urlencoded({ extended: true }));
 
 app.route("/").get((req, res) => {
   //Change the response to render the Pug template
-  res.render(process.cwd() + '/views/pug/index', {title: 'Hello', message: 'Please login'});
+  res.render('index', {title: 'Hello', message: 'Please login'});
 });
 
 app.listen(process.env.PORT || 3000, () => {
   console.log("Listening on port " + process.env.PORT);
 });
 
-app.set('view engine', 'pug')
+
