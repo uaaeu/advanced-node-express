@@ -13,7 +13,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.route("/").get((req, res) => {
   //Change the response to render the Pug template
-  res.render("/app/views/pug");
+  res.render(process.cwd() + '/views/pug/index', {title: 'Hello', message: 'Please login'});
 });
 
 app.listen(process.env.PORT || 3000, () => {
