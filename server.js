@@ -10,6 +10,7 @@ const session = require("express-session");
 const pug = require("pug");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const bcrypt = require("bcrypt")
 
 const app = express();
 
@@ -32,6 +33,8 @@ function ensureAuthenticated(req, res, next) {
   }
   res.redirect("/");
 }
+
+
 
 mongo.connect(process.env.DATABASE, (err, client) => {
   let db = client.db("advancednode");
@@ -62,7 +65,7 @@ mongo.connect(process.env.DATABASE, (err, client) => {
           if (!user) {
             return done(null, false);
           }
-          if (password !== user.password) {
+          if (!bcrypt.compareSync(password, user.password)) {
             return done(null, false);
           }
           return done(null, user);
@@ -104,6 +107,7 @@ mongo.connect(process.env.DATABASE, (err, client) => {
 
     app.route("/register").post(
       (req, res, next) => {
+        var hash = bcrypt.hashSync(req.body.password, 12)
         db.collection("users").findOne(
           { username: req.body.username },
           (err, user) => {
@@ -115,7 +119,7 @@ mongo.connect(process.env.DATABASE, (err, client) => {
               db.collection("users").insertOne(
                 {
                   username: req.body.username,
-                  password: req.body.password
+                  password: hash
                 },
                 (err, doc) => {
                   if (err) {
