@@ -15,6 +15,9 @@ const app = express();
 
 app.set("view engine", "pug");
 
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -22,8 +25,6 @@ app.use(
     saveUnitialized: true
   })
 );
-app.use(passport.initialize());
-app.use(passport.session());
 
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
@@ -73,7 +74,8 @@ mongo.connect(process.env.DATABASE, (err, client) => {
       res.render(process.cwd() + "/views/pug/index.pug", {
         title: "Home page",
         message: "Please login",
-        showLogin: true
+        showLogin: true,
+        showRegistration: true
       });
     });
 
@@ -82,13 +84,16 @@ mongo.connect(process.env.DATABASE, (err, client) => {
       .post(
         passport.authenticate("local", { failureRedirect: "/" }),
         (req, res) => {
-          res.redirect("/profile");
+          // res.redirect("/profile");
+          res.render(process.cwd() + "/views/pug/profile.pug", {
+            username: req.user.username
+          });
         }
       );
 
     app.route("/profile").get(ensureAuthenticated, (req, res) => {
       res.render(
-        process.cwd() + "/views/pug/profile" + { username: req.user.username }
+        process.cwd() + "/views/pug/profile" + { username: req.body.username }
       );
     });
 
@@ -96,6 +101,39 @@ mongo.connect(process.env.DATABASE, (err, client) => {
       req.logout();
       res.redirect("/");
     });
+
+    app.route("/register").post(
+      (req, res, next) => {
+        db.collection("users").findOne(
+          { username: req.body.username },
+          (err, user) => {
+            if (err) {
+              next(err);
+            } else if (user) {
+              res.redirect("/");
+            } else {
+              db.collection("users").insertOne(
+                {
+                  username: req.body.username,
+                  password: req.body.password
+                },
+                (err, doc) => {
+                  if (err) {
+                    res.redirect("/");
+                  } else {
+                    next(null, user);
+                  }
+                }
+              );
+            }
+          }
+        );
+      },
+      passport.authenticate("local", { failureRedirect: "/" }),
+      (req, res, next) => {
+        res.redirect("/profile");
+      }
+    );
 
     app.use((req, res, next) => {
       res
